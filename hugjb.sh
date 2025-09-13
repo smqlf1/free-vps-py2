@@ -88,6 +88,6 @@ if [ -n "$SUB_LINKS" ]; then
   echo "$SUB_LINKS"
 else
   echo "⚠️ 没有在 app.log 找到订阅地址，请手动检查："
-  echo "  tail -f python-xray-argo/app.log"
-  cat app.log
+  # 输出最后50行日志，避免过多输出
+  tail -n 50 app.log
 fi
