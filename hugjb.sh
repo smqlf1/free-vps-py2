@@ -3,22 +3,27 @@ set -e
 
 # 默认参数
 UUID=$(cat /proc/sys/kernel/random/uuid)
-PORT=8080
 CFIP="cdn.xn--b6gac.eu.org"   # 默认优选 IP
 
 echo "==== Xray Argo 精简部署 (No-Root) ===="
 echo "UUID: $UUID"
-read -p "是否自定义端口? (默认: $PORT): " input_port
-if [ -n "$input_port" ]; then PORT=$input_port; fi
+
+# 自动分配一个系统可用端口
+PORT=$(python3 - <<EOF
+import socket
+s=socket.socket()
+s.bind(('',0))
+print(s.getsockname()[1])
+s.close()
+EOF
+)
+echo "使用系统分配的端口: $PORT"
+
 read -p "是否自定义优选IP? (默认: $CFIP): " input_cfip
 if [ -n "$input_cfip" ]; then CFIP=$input_cfip; fi
 
-# 检查端口是否被占用并找到可用端口
-while lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; do
-  echo "端口 $PORT 已被占用，尝试其他端口"
-  PORT=$((PORT + 1))
-done
 echo "最终配置: UUID=$UUID, PORT=$PORT, CFIP=$CFIP"
+sleep 1
 
 # 环境检查
 if ! command -v python3 >/dev/null 2>&1; then
@@ -43,7 +48,7 @@ fi
 
 cd python-xray-argo
 
-# 修改 app.py 默认参数 (注意：必须在端口检测后)
+# 修改 app.py 默认参数
 sed -i "s|UUID = .*|UUID = '$UUID'|" app.py
 sed -i "s|PORT = .*|PORT = $PORT|" app.py
 sed -i "s|CFIP = .*|CFIP = '$CFIP'|" app.py
@@ -83,69 +88,21 @@ sleep 20
 # 检查应用是否仍在运行
 if ! ps -p $APP_PID > /dev/null; then
   echo "应用已停止运行，检查日志..."
-  echo "日志最后20行:"
   tail -n 20 app.log
   exit 1
 fi
 
-# 汇总文件
-ALL_SUBS="all_subscriptions.txt"
-echo "" > "$ALL_SUBS"
-
 echo "==== 提取订阅链接 ===="
 
-# 查找并解码Base64订阅链接
-BASE64_LINKS=$(grep -Eo "[A-Za-z0-9+/=]{100,}" app.log | head -2)
-
-if [ -n "$BASE64_LINKS" ]; then
-  echo "找到Base64编码的订阅链接，正在解码..."
-  
-  VLESS_LINK=$(echo "$BASE64_LINKS" | head -1 | base64 -d 2>/dev/null || echo "")
-  if [ -n "$VLESS_LINK" ]; then
-    echo "✅ VLESS: $VLESS_LINK"
-    echo "$VLESS_LINK" >> "$ALL_SUBS"
-  fi
-  
-  TROJAN_LINK=$(echo "$BASE64_LINKS" | tail -1 | base64 -d 2>/dev/null || echo "")
-  if [ -n "$TROJAN_LINK" ]; then
-    echo "✅ Trojan: $TROJAN_LINK"
-    echo "$TROJAN_LINK" >> "$ALL_SUBS"
-  fi
+# 直接从日志里找常见的订阅链接
+LINKS=$(grep -Eo "(vmess|vless|trojan|ss)://[^[:space:]]+" app.log | head -10)
+if [ -n "$LINKS" ]; then
+  echo "找到订阅链接:"
+  echo "$LINKS"
+  echo "$LINKS" > subscriptions.txt
 fi
 
-# 其他格式
-OTHER_LINKS=$(grep -Eo "(vmess|vless|trojan|ss)://[^[:space:]]+" app.log | head -5)
-if [ -n "$OTHER_LINKS" ]; then
-  echo "✅ 其他链接:"
-  echo "$OTHER_LINKS"
-  echo "$OTHER_LINKS" >> "$ALL_SUBS"
-fi
-
-# 尝试从本地服务获取订阅
-if curl -s -m 10 http://localhost:$PORT >/dev/null; then
-  SUB_PATHS=("/sub" "/subscribe" "/link" "/config" "/v2ray" "/api/sub")
-  for path in "${SUB_PATHS[@]}"; do
-    response=$(curl -s -m 5 "http://localhost:$PORT$path" || true)
-    if [ -n "$response" ] && echo "$response" | grep -qE "(vmess|vless|trojan|ss)://"; then
-      SERVICE_LINKS=$(echo "$response" | grep -Eo "(vmess|vless|trojan|ss)://[^[:space:]]+")
-      echo "✅ 本地服务提供的订阅:"
-      echo "$SERVICE_LINKS"
-      echo "$SERVICE_LINKS" >> "$ALL_SUBS"
-      break
-    fi
-  done
-fi
-
-# 检查结果
-if [ -s "$ALL_SUBS" ]; then
-  echo "✅ 所有订阅已汇总到: $(pwd)/$ALL_SUBS"
-  cat "$ALL_SUBS"
-else
-  echo "❌ 未能提取到订阅链接，请查看日志: $(pwd)/app.log"
-  tail -n 20 app.log
-fi
-
-# 显示ARGO域名
+# 显示 ARGO 域名
 ARGO_DOMAIN=$(grep -o "ArgoDomain: [^ ]*" app.log | cut -d' ' -f2)
 if [ -n "$ARGO_DOMAIN" ]; then
   echo "ARGO 域名: $ARGO_DOMAIN"
@@ -156,9 +113,11 @@ echo ""
 echo "==== 部署状态 ===="
 echo "应用 PID: $APP_PID"
 echo "日志文件: $(pwd)/app.log"
+echo "订阅链接文件: $(pwd)/subscriptions.txt"
 echo "停止应用命令: kill $APP_PID"
 echo "查看实时日志: tail -f $(pwd)/app.log"
 
+# 最后显示几行日志
 echo ""
 echo "最后日志输出:"
 tail -n 10 app.log
