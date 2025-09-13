@@ -48,10 +48,11 @@ fi
 
 cd python-xray-argo
 
-# 修改 app.py 默认参数
+# 修改 app.py 默认参数（确保所有端口都被替换）
 sed -i "s|UUID = .*|UUID = '$UUID'|" app.py
 sed -i "s|PORT = .*|PORT = $PORT|" app.py
 sed -i "s|CFIP = .*|CFIP = '$CFIP'|" app.py
+sed -i "s|('0.0.0.0', [0-9]\+)|('0.0.0.0', $PORT)|" app.py
 
 # Hugging Face 保活配置
 read -p "是否启用 Hugging Face 保活? (y/n): " enable_hf
