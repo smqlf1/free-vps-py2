@@ -3,7 +3,7 @@ set -e
 
 # 默认参数
 UUID=$(cat /proc/sys/kernel/random/uuid)
-PORT=8080
+PORT=9000
 CFIP="cdn.xn--b6gac.eu.org"   # 默认优选 IP
 
 echo "==== Xray Argo 精简部署 (No-Root) ===="
