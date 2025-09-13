@@ -6,7 +6,7 @@ UUID=$(cat /proc/sys/kernel/random/uuid)
 PORT=8080
 CFIP="cdn.xn--b6gac.eu.org"   # 默认优选 IP
 
-echo "==== Xray Argo 精简部署 ===="
+echo "==== Xray Argo 精简部署 (No-Root) ===="
 echo "UUID: $UUID"
 read -p "是否自定义端口? (默认: $PORT): " input_port
 if [ -n "$input_port" ]; then PORT=$input_port; fi
@@ -16,10 +16,14 @@ if [ -n "$input_cfip" ]; then CFIP=$input_cfip; fi
 echo "最终配置: UUID=$UUID, PORT=$PORT, CFIP=$CFIP"
 sleep 1
 
-# 依赖
-apt-get update -y
-apt-get install -y python3 python3-pip
-pip3 install requests
+# 环境检查 (不用 root 装 python)
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "错误: 运行环境没有 python3, 请手动安装."
+  exit 1
+fi
+
+# 安装依赖 (用户目录安装, 避免权限问题)
+pip3 install --user requests >/dev/null 2>&1 || true
 
 # 拉取代码
 if [ ! -d "python-xray-argo" ]; then
