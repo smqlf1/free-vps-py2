@@ -30,6 +30,15 @@ fi
 
 cd python-xray-argo || { echo "Failed to enter directory."; exit 1; }
 
+# Check if app.py exists
+if [ ! -f "app.py" ]; then
+  echo "Error: app.py not found in python-xray-argo directory."
+  exit 1
+fi
+
+# Ensure app.py is executable
+chmod +x app.py
+
 # Install Python dependencies (if requirements.txt exists)
 if [ -f "requirements.txt" ]; then
   echo "Installing Python dependencies..."
@@ -42,7 +51,7 @@ fi
 # Stop old processes
 pkill -f "python3 app.py" 2>/dev/null
 
-# Export environment variables for app.py (if needed)
+# Export environment variables for app.py
 export UUID=$UUID
 export PORT=$PORT
 export CFIP=$CFIP
