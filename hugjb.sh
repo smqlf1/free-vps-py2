@@ -15,29 +15,50 @@ CFIP=${CFIP:-cdn.xn--b6gac.eu.org}
 
 echo "最终配置: UUID=$UUID, PORT=$PORT, CFIP=$CFIP"
 
-# 克隆仓库（如果没有）
+# Check dependencies
+command -v git >/dev/null 2>&1 || { echo "Error: git is not installed."; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo "Error: python3 is not installed."; exit 1; }
+
+# Clone repository
 if [ ! -d "python-xray-argo" ]; then
-  git clone https://github.com/smqlf1/python-xray-argo
+  echo "Cloning repository..."
+  if ! git clone https://github.com/smqlf1/python-xray-argo; then
+    echo "Failed to clone repository. Check network or URL."
+    exit 1
+  fi
 fi
 
-cd python-xray-argo || exit 1
+cd python-xray-argo || { echo "Failed to enter directory."; exit 1; }
 
-# 停掉旧进程
-pkill -f "python3 app.py"
+# Install Python dependencies (if requirements.txt exists)
+if [ -f "requirements.txt" ]; then
+  echo "Installing Python dependencies..."
+  pip3 install -r requirements.txt || { echo "Failed to install dependencies."; exit 1; }
+fi
 
-# 后台启动并写日志
-nohup python3 app.py > app.log 2>&1 &
+# Stop old processes
+pkill -f "python3 app.py" 2>/dev/null
 
-echo "Xray Argo 已启动 ✅"
-sleep 10
+# Start application
+echo "Starting Xray Argo..."
+if ! nohup python3 app.py > app.log 2>&1 &; then
+  echo "Failed to start app.py. Check app.log for details:"
+  cat app.log
+  exit 1
+fi
+
+echo "Waiting for application to start..."
+sleep 30
 
 echo "==== 提取订阅链接 ===="
-# 提取常见的节点协议行
+# Extract subscription links
 SUB_LINKS=$(grep -Eo "vmess://[^\s]+|vless://[^\s]+|trojan://[^\s]+|ss://[^\s]+|https://[^\s]+sub[^\s]*" app.log)
 
 if [ -n "$SUB_LINKS" ]; then
-    echo "$SUB_LINKS"
+  echo "订阅链接:"
+  echo "$SUB_LINKS"
 else
-    echo "⚠️ 没有在 app.log 找到订阅地址，请手动检查："
-    echo "  tail -f python-xray-argo/app.log"
+  echo "⚠️ 没有在 app.log 找到订阅地址，请手动检查："
+  echo "  tail -f python-xray-argo/app.log"
+  cat app.log
 fi
