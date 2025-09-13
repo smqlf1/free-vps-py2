@@ -27,7 +27,7 @@ pip3 install --user requests >/dev/null 2>&1 || true
 
 # 拉取代码
 if [ ! -d "python-xray-argo" ]; then
-  git clone https://github.com/3Kmfi6HP/python-xray-argo
+  git clone https://github.com/smqlf1/python-xray-argo
 fi
 cd python-xray-argo
 
