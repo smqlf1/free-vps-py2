@@ -33,7 +33,10 @@ cd python-xray-argo || { echo "Failed to enter directory."; exit 1; }
 # Install Python dependencies (if requirements.txt exists)
 if [ -f "requirements.txt" ]; then
   echo "Installing Python dependencies..."
-  pip3 install -r requirements.txt || { echo "Failed to install dependencies."; exit 1; }
+  if ! pip3 install -r requirements.txt; then
+    echo "Failed to install dependencies."
+    exit 1
+  fi
 fi
 
 # Stop old processes
@@ -41,14 +44,26 @@ pkill -f "python3 app.py" 2>/dev/null
 
 # Start application
 echo "Starting Xray Argo..."
-if ! nohup python3 app.py > app.log 2>&1 &; then
+if ! nohup python3 app.py > app.log 2>&1 & then
   echo "Failed to start app.py. Check app.log for details:"
   cat app.log
   exit 1
 fi
 
+# Store the PID of the background process
+APP_PID=$!
+echo "Application started with PID: $APP_PID"
+
+# Wait for application to initialize
 echo "Waiting for application to start..."
 sleep 30
+
+# Check if the application is still running
+if ! ps -p $APP_PID > /dev/null; then
+  echo "Application (PID: $APP_PID) is not running. Check app.log for errors:"
+  cat app.log
+  exit 1
+fi
 
 echo "==== 提取订阅链接 ===="
 # Extract subscription links
