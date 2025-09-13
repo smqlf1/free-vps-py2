@@ -42,6 +42,11 @@ fi
 # Stop old processes
 pkill -f "python3 app.py" 2>/dev/null
 
+# Export environment variables for app.py (if needed)
+export UUID=$UUID
+export PORT=$PORT
+export CFIP=$CFIP
+
 # Start application
 echo "Starting Xray Argo..."
 if ! nohup python3 app.py > app.log 2>&1 & then
