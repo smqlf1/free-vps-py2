@@ -27,7 +27,7 @@ check_dep curl
 
 # 拉取代码
 rm -rf python-xray-argo
-git clone https://github.com/wyx2685/python-xray-argo.git
+git clone https://github.com/eooce/python-xray-argo
 cd python-xray-argo || exit
 chmod +x app.py
 
