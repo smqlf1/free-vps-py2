@@ -268,9 +268,9 @@ else
     fi
 
     echo -e "${YELLOW}当前优选IP: $(grep "CFIP = " app.py | cut -d"'" -f4)${NC}"
-    read -p "请输入优选IP/域名 (留空使用默认 joeyblog.net): " CFIP_INPUT
+    read -p "请输入优选IP/域名 (留空使用默认 okti.xyz): " CFIP_INPUT
     if [ -z "$CFIP_INPUT" ]; then
-        CFIP_INPUT="joeyblog.net"
+        CFIP_INPUT="okti.xyz"
     fi
     sed -i "s/CFIP = os.environ.get('CFIP', '[^']*')/CFIP = os.environ.get('CFIP', '$CFIP_INPUT')/" app.py
     echo -e "${GREEN}优选IP已设置为: $CFIP_INPUT${NC}"
