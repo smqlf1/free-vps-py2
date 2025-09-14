@@ -171,4 +171,15 @@ echo $PID > app.pid
 
 echo -e "${GREEN}服务已启动，PID: $PID${NC}"
 echo -e "${GREEN}保活任务已启动，PID: $KEEPALIVE_PID${NC}"
-echo -e "${YELLOW}节点信息请查看 nodes.txt${NC}"
+
+echo -e "${YELLOW}========== 节点信息 ==========${NC}"
+cat nodes.txt
+echo -e "${YELLOW}==============================${NC}"
+
+# 自动生成订阅链接
+echo -e "${GREEN}正在生成订阅链接...${NC}"
+base64 -w 0 nodes.txt > sub.txt
+SUB_CONTENT=$(cat sub.txt)
+echo -e "${YELLOW}订阅链接如下 (可复制到客户端):${NC}"
+echo "data:application/octet-stream;base64,$SUB_CONTENT"
+
