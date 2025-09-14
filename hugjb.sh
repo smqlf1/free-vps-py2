@@ -173,7 +173,10 @@ echo -e "${GREEN}服务已启动，PID: $PID${NC}"
 echo -e "${GREEN}保活任务已启动，PID: $KEEPALIVE_PID${NC}"
 
 echo -e "${YELLOW}========== 节点信息 ==========${NC}"
-cat nodes.txt
+cat >> nodes.txt <<EOF
+vless://$UUID@$CFIP:80?encryption=none&security=none&type=ws&host=$CFIP&path=/
+EOF
+
 echo -e "${YELLOW}==============================${NC}"
 
 # 自动生成订阅链接
