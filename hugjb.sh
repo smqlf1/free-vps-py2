@@ -268,17 +268,28 @@ else
     fi
 
     echo -e "${YELLOW}当前优选IP: $(grep "CFIP = " app.py | cut -d"'" -f4)${NC}"
-    read -p "请输入优选IP/域名 (留空使用默认 okti.xyz): " CFIP_INPUT
-    if [ -z "$CFIP_INPUT" ]; then
-        CFIP_INPUT="okti.xyz"
-    fi
-    sed -i "s/CFIP = os.environ.get('CFIP', '[^']*')/CFIP = os.environ.get('CFIP', '$CFIP_INPUT')/" app.py
+    # ================== 设置 CFIP ==================
+ 
+
     echo -e "${GREEN}优选IP已设置为: $CFIP_INPUT${NC}"
 
     echo -e "${YELLOW}当前优选端口: $(grep "CFPORT = " app.py | cut -d"'" -f4)${NC}"
-    read -p "请输入优选端口 (留空保持不变): " CFPORT_INPUT
-    if [ -n "$CFPORT_INPUT" ]; then
-        sed -i "s/CFPORT = int(os.environ.get('CFPORT', '[^']*'))/CFPORT = int(os.environ.get('CFPORT', '$CFPORT_INPUT'))/" app.py
+    # ================== 设置 CFIP ==================
+read -p "请输入CF优选IP或域名 (可选，留空则使用默认域名 joeyblog.net): " CFIP
+if [[ -z "$CFIP" ]]; then
+    CFIP="joeyblog.net"
+fi
+
+# 判断输入是否为 IP 地址
+if [[ $CFIP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${GREEN}检测到输入为IP，将直接使用: $CFIP${NC}"
+else
+    echo -e "${GREEN}检测到输入为域名，将使用: $CFIP${NC}"
+fi
+
+# 修改 app.py 中的配置
+sed -i "s|CFIP = .*|CFIP = '$CFIP'|" app.py
+
         echo -e "${GREEN}优选端口已设置为: $CFPORT_INPUT${NC}"
     fi
 
